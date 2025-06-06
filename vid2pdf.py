@@ -33,15 +33,14 @@ def download_youtube_video(url, output_path):
     mp4_files.sort(key=lambda f: os.path.getmtime(os.path.join(output_path, f)), reverse=True)
     return os.path.join(output_path, mp4_files[0])
 
-def extract_unique_frames(video_path, frame_interval=1):
+def extract_unique_frames(video_path):
     vidcap = cv2.VideoCapture(video_path)
     fps = vidcap.get(cv2.CAP_PROP_FPS)
     frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
-    duration = frame_count / fps
+    duration = int(frame_count / fps)
     unique_hashes = set()
     unique_frames = []
-    prev_hash = None
-    for sec in range(0, int(duration)):
+    for sec in range(0, duration, 2):  # Extract every 2 seconds
         vidcap.set(cv2.CAP_PROP_POS_MSEC, sec * 1000)
         success, image = vidcap.read()
         if not success:
@@ -49,12 +48,11 @@ def extract_unique_frames(video_path, frame_interval=1):
         _, buffer = cv2.imencode('.jpg', image)
         img_bytes = buffer.tobytes()
         md5_hash = hashlib.md5(img_bytes).hexdigest()
-        if md5_hash == prev_hash:
-            continue
         if md5_hash not in unique_hashes:
+            print(f"Extracting frame at {sec} seconds, hash: {md5_hash}")
+            # Store the unique frame
             unique_hashes.add(md5_hash)
             unique_frames.append(img_bytes)
-        prev_hash = md5_hash
     vidcap.release()
     return unique_frames
 
