@@ -72,21 +72,36 @@ def save_frames_to_pdf(frames, output_pdf):
         os.remove('temp.jpg')
     pdf.output(output_pdf, "F")
 
+def is_url(input_str):
+    return input_str.startswith("http://") or input_str.startswith("https://")
+
+def get_video_path(input_arg):
+    if is_url(input_arg):
+        print("Downloading video from URL...")
+        return download_youtube_video(input_arg, ".")
+    else:
+        if not os.path.isfile(input_arg):
+            print(f"File not found: {input_arg}")
+            sys.exit(1)
+        print(f"Using local file: {input_arg}")
+        return input_arg
+
 def main():
     if len(sys.argv) != 3:
-        print("Usage: python vid2pdf.py <YouTube_URL> <output.pdf>")
+        print("Usage: python vid2pdf.py <YouTube_URL_or_local_video_path> <output.pdf>")
         sys.exit(1)
-    url = sys.argv[1]
+    input_arg = sys.argv[1]
     output_pdf = sys.argv[2]
-    print("Downloading video...")
-    video_path = download_youtube_video(url, ".")
+    video_path = get_video_path(input_arg)
     print("Extracting unique frames...")
     frames = extract_unique_frames(video_path)
     print(f"{len(frames)} unique frames extracted.")
     print("Generating PDF...")
     save_frames_to_pdf(frames, output_pdf)
     print(f"PDF saved as {output_pdf}")
-    os.remove(video_path)
+    # Deletion of the video file is disabled during development
+    # if is_url(input_arg):
+    #     os.remove(video_path)
 
 if __name__ == "__main__":
     main()
