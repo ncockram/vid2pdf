@@ -1,16 +1,37 @@
 import os
 import sys
 import hashlib
-from pytube import YouTube
+import subprocess
 import cv2
 from PIL import Image
 from fpdf import FPDF
 
 def download_youtube_video(url, output_path):
-    yt = YouTube(url)
-    stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
-    video_path = stream.download(output_path=output_path)
-    return video_path
+    """Download a YouTube video using yt-dlp and return the path to the downloaded file."""
+    # Ensure yt-dlp is installed
+    try:
+        import yt_dlp
+    except ImportError:
+        print("yt-dlp not found. Please install it with: pip install yt-dlp")
+        sys.exit(1)
+    # Use yt-dlp to download the best mp4 format
+    output_template = os.path.join(output_path, '%(title)s.%(ext)s')
+    command = [
+        sys.executable, '-m', 'yt_dlp',
+        '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        '-o', output_template,
+        url
+    ]
+    print("Running:", ' '.join(command))
+    subprocess.run(command, check=True)
+    # Find the downloaded file (assume only one new mp4 in output_path)
+    mp4_files = [f for f in os.listdir(output_path) if f.endswith('.mp4')]
+    if not mp4_files:
+        print("No mp4 file found after download.")
+        sys.exit(1)
+    # Get the most recently modified mp4 file
+    mp4_files.sort(key=lambda f: os.path.getmtime(os.path.join(output_path, f)), reverse=True)
+    return os.path.join(output_path, mp4_files[0])
 
 def extract_unique_frames(video_path, frame_interval=1):
     vidcap = cv2.VideoCapture(video_path)
