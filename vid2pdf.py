@@ -69,6 +69,13 @@ def extract_unique_frames(video_path):
 
 def save_frames_to_pdf(frames, output_pdf):
     pdf = FPDF()
+    # Page and image layout settings
+    page_width = 210  # A4 width in mm
+    page_height = 297  # A4 height in mm
+    margin = 10  # mm
+    image_max_width = page_width - 2 * margin
+    y = margin
+    pdf.add_page()
     for i, img_bytes in enumerate(frames):
         temp_filename = f'temp_{i}.jpg'
         with open(temp_filename, 'wb') as f:
@@ -76,9 +83,21 @@ def save_frames_to_pdf(frames, output_pdf):
         img = Image.open(temp_filename)
         img = img.convert('RGB')
         img.save(temp_filename)
-        pdf.add_page()
-        pdf.image(temp_filename, x=10, y=10, w=190)
+        # Calculate scaling to fit image within max width, preserving aspect ratio
+        img_width_px, img_height_px = img.size
+        dpi = 96  # Assume 96 dpi for conversion
+        img_width_mm = img_width_px * 25.4 / dpi
+        img_height_mm = img_height_px * 25.4 / dpi
+        scale = min(image_max_width / img_width_mm, (page_height - 2 * margin) / img_height_mm, 1.0)
+        draw_width = img_width_mm * scale
+        draw_height = img_height_mm * scale
+        # If the next image would go past the bottom margin, start a new page
+        if y + draw_height > page_height - margin:
+            pdf.add_page()
+            y = margin
+        pdf.image(temp_filename, x=margin, y=y, w=draw_width, h=draw_height)
         os.remove(temp_filename)
+        y += draw_height + 5  # 5mm spacing between images
     pdf.output(output_pdf, "F")
 
 def is_url(input_str):
