@@ -30,8 +30,8 @@ def download_youtube_video(url, output_path):
     if not mp4_files:
         print("No mp4 file found after download.")
         sys.exit(1)
-    # Get the most recently modified mp4 file
-    mp4_files.sort(key=lambda f: os.path.getmtime(os.path.join(output_path, f)), reverse=True)
+    # Get the most recently created mp4 file
+    mp4_files.sort(key=lambda f: os.path.getctime(os.path.join(output_path, f)), reverse=True)
     return os.path.join(output_path, mp4_files[0])
 
 def are_frames_different(frame1, frame2, mse_threshold=100):
